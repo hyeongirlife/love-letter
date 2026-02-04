@@ -1,127 +1,111 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
 export default function WritePage() {
+  const router = useRouter();
   const [content, setContent] = useState("");
-  const [isScheduled, setIsScheduled] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [partnerNickname, setPartnerNickname] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/couples/status")
+      .then((res) => res.json())
+      .then((data) => setPartnerNickname(data.partnerNickname));
+  }, []);
+
+  async function handleSend() {
+    if (!content.trim()) return;
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/letters", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || "Failed to send");
+        return;
+      }
+
+      router.push("/archive");
+    } catch {
+      alert("Failed to send");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden">
-      {/* Top Navigation */}
-      <nav className="sticky top-0 z-50 w-full border-b border-border bg-card/80 backdrop-blur-md px-6 py-3">
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#f8f5f6] dark:bg-[#221016]">
+      {/* Header */}
+      <nav className="sticky top-0 z-50 w-full border-b border-[#f4e7eb] dark:border-[#4a2330] bg-white/90 dark:bg-[#331821]/90 backdrop-blur-md px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/home" className="text-muted-foreground hover:text-foreground transition-colors">
-              <span className="material-symbols-outlined">arrow_back</span>
+            <Link href="/home" className="text-slate-500 hover:text-[#f20d59] transition-colors">
+              <Image src="/icons/arrow-back.svg" alt="back" width={24} height={24} className="opacity-70 hover:opacity-100" />
             </Link>
-            <h1 className="text-xl font-bold tracking-tight text-foreground">편지 쓰기</h1>
+            <h1 className="text-xl font-bold text-[#1c0d12] dark:text-white">Write a Letter</h1>
           </div>
-          <div className="flex items-center gap-2 text-primary/80 bg-primary/5 px-3 py-1.5 rounded-full">
-            <span className="material-symbols-outlined text-sm">cloud_done</span>
-            <span className="text-xs font-semibold">자동 저장됨</span>
-          </div>
+          <p className="text-sm text-slate-400">
+            {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+          </p>
         </div>
       </nav>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col items-center py-8 px-4 sm:px-6 w-full max-w-5xl mx-auto overflow-y-auto">
-        {/* Page Header */}
-        <div className="w-full mb-6 flex flex-wrap items-end justify-between gap-4">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground text-sm font-medium uppercase tracking-wider">받는 사람</span>
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground flex items-center gap-2">
-              To: 영희 <span className="text-primary">💕</span>
-            </h2>
-          </div>
+        {/* To Header */}
+        <div className="w-full mb-6">
+          <h2 className="text-3xl font-bold text-[#1c0d12] dark:text-white flex items-center gap-2">
+            To: {partnerNickname || "My Love"} <span className="text-[#f20d59]">💕</span>
+          </h2>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">Express your feelings in words...</p>
         </div>
 
-        {/* The "Paper" Editor */}
-        <div className="w-full flex-1 flex flex-col relative group">
-          {/* Paper Container */}
-          <div className="relative w-full bg-card rounded-xl shadow-sm border border-border flex flex-col min-h-[60vh] md:min-h-[500px] overflow-hidden transition-all duration-300">
-            {/* Date Header on Paper */}
-            <div className="absolute top-6 right-8 z-10 opacity-60">
-              <p className="italic text-muted-foreground text-sm">
-                {new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" })}
-              </p>
+        {/* Letter Paper */}
+        <div className="w-full flex-1 flex flex-col">
+          <div className="relative w-full bg-white dark:bg-[#331821] rounded-2xl shadow-lg border border-[#f4e7eb] dark:border-[#4a2330] flex flex-col min-h-[450px] overflow-hidden">
+            {/* Decorative corner */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#f20d59]/5 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+            
+            {/* Paper lines decoration */}
+            <div className="absolute inset-x-0 top-20 bottom-0 pointer-events-none opacity-[0.03]">
+              {[...Array(20)].map((_, i) => (
+                <div key={i} className="h-8 border-b border-slate-900 dark:border-white mx-8"></div>
+              ))}
             </div>
 
-            {/* Text Area */}
             <Textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="사랑하는 영희에게..."
-              className="w-full h-full flex-1 resize-none bg-transparent border-0 focus:ring-0 p-8 md:p-12 text-xl md:text-2xl leading-8 text-foreground placeholder:text-muted-foreground/50 focus:outline-none min-h-[400px]"
-              style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+              placeholder="Dear love, I wanted to tell you..."
+              className="w-full h-full flex-1 resize-none bg-transparent border-0 p-8 md:p-12 text-xl leading-8 text-[#1c0d12] dark:text-white placeholder:text-slate-400/50 focus-visible:ring-0 min-h-[450px] relative z-10"
             />
           </div>
 
-          {/* Toolbar & Actions Footer */}
-          <div className="mt-6 w-full bg-card rounded-xl border border-border p-3 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
-            {/* Left: Tools */}
-            <div className="flex items-center gap-1 w-full md:w-auto justify-between md:justify-start overflow-x-auto">
-              {/* Theme Picker */}
-              <button className="p-2.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
-                <span className="material-symbols-outlined">palette</span>
-              </button>
-              <div className="w-px h-6 bg-border mx-1"></div>
-              {/* Text Formatting */}
-              <div className="flex items-center gap-1">
-                <button className="p-2.5 rounded-lg text-foreground hover:bg-accent transition-colors font-bold">B</button>
-                <button className="p-2.5 rounded-lg text-foreground hover:bg-accent transition-colors italic">I</button>
-              </div>
-              <div className="w-px h-6 bg-border mx-1"></div>
-              {/* Media Attachment */}
-              <div className="flex items-center gap-1">
-                <button className="p-2.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="사진 추가">
-                  <span className="material-symbols-outlined">image</span>
-                </button>
-                <button className="p-2.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" title="음성 녹음">
-                  <span className="material-symbols-outlined">mic</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Right: Delivery & Send */}
-            <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
-              {/* Delivery Toggle */}
-              <div className="bg-background p-1 rounded-lg flex items-center w-full sm:w-auto">
-                <button
-                  onClick={() => setIsScheduled(false)}
-                  className={`flex-1 sm:flex-none px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    !isScheduled ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"
-                  }`}
-                >
-                  즉시 전송
-                </button>
-                <button
-                  onClick={() => setIsScheduled(true)}
-                  className={`flex-1 sm:flex-none px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    isScheduled ? "bg-card shadow-sm text-foreground" : "text-muted-foreground"
-                  }`}
-                >
-                  예약
-                </button>
-              </div>
-
-              {/* Send Button */}
-              <Button className="w-full sm:w-auto h-11 px-6 shadow-md shadow-primary/30">
-                <span>보내기</span>
-                <span className="material-symbols-outlined text-[18px] ml-2">send</span>
-              </Button>
-            </div>
+          {/* Action Buttons */}
+          <div className="mt-6 flex items-center justify-between">
+            <p className="text-sm text-slate-400">
+              {content.length} characters
+            </p>
+            <Button
+              onClick={handleSend}
+              disabled={loading || !content.trim()}
+              className="h-12 px-8 bg-[#f20d59] hover:bg-[#d61a56] text-white font-bold rounded-xl shadow-lg shadow-[#f20d59]/30 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span>{loading ? "Sending..." : "Send Letter"}</span>
+              <Image src="/icons/send.svg" alt="send" width={18} height={18} className="ml-2 invert" />
+            </Button>
           </div>
-
-          {/* Contextual Note */}
-          <p className="text-center text-xs text-muted-foreground mt-6">
-            편지는 암호화되어 안전하게 전달됩니다.
-          </p>
         </div>
       </main>
     </div>
