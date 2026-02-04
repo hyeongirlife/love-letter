@@ -40,7 +40,7 @@ export function LetterCard({ id, senderName, title, time, isNew, isRead }: Lette
             </h4>
             {isNew && (
               <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full shrink-0">
-                New
+                새 편지
               </span>
             )}
           </div>
