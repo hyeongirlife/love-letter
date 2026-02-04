@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  nickname        String
+  inviteCode      String    @unique @default(cuid())
+  partnerId       String?   @unique
+  reminderTime    String    @default("21:00")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  connectedAt     DateTime?
+  receivedLetters Letter[]  @relation("Receiver")
+  sentLetters     Letter[]  @relation("Sender")
+  moments         Moment[]
+  partner         User?     @relation("Couple", fields: [partnerId], references: [id])
+  partnerOf       User?     @relation("Couple")
+}
+
+model Letter {
+  id          String    @id @default(cuid())
+  senderId    String
+  receiverId  String
+  content     String
+  themeId     String    @default("default")
+  scheduledAt DateTime?
+  isOpened    Boolean   @default(false)
+  openedAt    DateTime?
+  createdAt   DateTime  @default(now())
+  receiver    User      @relation("Receiver", fields: [receiverId], references: [id])
+  sender      User      @relation("Sender", fields: [senderId], references: [id])
+}
+
+model Moment {
+  id          String   @id @default(cuid())
+  title       String
+  date        DateTime
+  category    String   @default("milestone")
+  description String?
+  imageUrl    String?
+  icon        String   @default("favorite")
+  isRecurring Boolean  @default(false)
+  isShared    Boolean  @default(false)
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id])
+}
